@@ -10,46 +10,50 @@ function App() {
   const [destination, setDestination] = useState('');
   const [originLatLng, setOriginLatLng] = useState({});
   const [destLatLng, setDestLatLng] = useState({});
+  const [originAutoRef, setOriginAutoVal] = useState('');
+  const [destAutoRef, setDestAutoVal] = useState('');
+  const [orderDescript, setOrderDescript] = useState('');
 
-  const googleRef = useRef();
   const mapRef = useRef();
-  console.log(googleRef);
+  const originRef = useRef();
+  const destRef = useRef();
 
-
-function getDom() {
-  let item = document.getElementById('googleID');
-  console.log(item, googleRef);
-  new window.google.maps.places.Autocomplete(googleRef.current);
-}
+  function getDom() {
+    //! just a ref on how to create the auto complete object
+    let item = document.getElementById('googleID');
+    console.log(item, originRef);
+    let info = new window.google.maps.places.Autocomplete(originRef.current);
+  }
 
   useEffect(() => {
-    //console.log(window.google.maps.places.Autocomplete);
-    //window.google.maps.places.Autocomplete()
+    let originAutoRef = new window.google.maps.places.Autocomplete(originRef.current);
+    let destAutoRef = new window.google.maps.places.Autocomplete(destRef.current);
+    originAutoRef.setFields(['address_component', 'geometry']);
+    destAutoRef.setFields(['address_component', 'geometry']);
+    new window.google.maps.event.addListener(originAutoRef, 'place_changed', () => {
+      let place = originAutoRef.getPlace();
+      console.log(place);
+    })
+    new window.google.maps.event.addListener(destAutoRef, 'place_changed', () => {
+      let place = destAutoRef.getPlace();
+      console.log(place);
+    })
+    setOriginAutoVal(originAutoRef);
+    setDestAutoVal(destAutoRef);
   },[])
 
-  function handleOrigin(address) {
-    setOrigin(address)
-  }
-  
-  function handleOriginSelect(address) {
-    geocodeByAddress(address)
-    .then(results => {console.log(results); return getLatLng(results[0])})
-    .then(latLng => {setOriginLatLng(makeGoogleLatLng(latLng)); console.log('Success Origin', latLng)})
-    .catch(error => console.error('Error', error));
-    setOrigin(address);
-  }
+  function createOrder() {
+    console.log('WHY?')
+    console.log('THIS SHOULD WORK', originRef, destRef);
+    console.log('this input values', origin, destination);
+    console.log('creating order');
+    let originAuto = originAutoRef.getPlace();
+    let destinationAuto = destAutoRef.getPlace();
+    console.log('here is order info: \n', originAuto, orderDescript, destinationAuto);
 
-  function handleDestination(address) {
-    setDestination(address)
-  }
-  
-  function handleDestinationSelect(address) {
-    geocodeByAddress(address)
-    .then(results => {console.log(results); return getLatLng(results[0])})
-    .then(latLng => {setDestLatLng(makeGoogleLatLng(latLng)); console.log('Success Dest', latLng);})
-    .catch(error => console.error('Error', error));
-    setDestination(address);
 
+
+    let newLL = new window.google.maps.LatLng()
   }
 
   function makeGoogleLatLng(latLngObj) {
@@ -66,6 +70,8 @@ function getDom() {
       center: { lat: 43.726, lng: -79.401}
     });
 
+    //these are decimal degrees
+    //toronto lat lng  43.726, -79.401
     let point1 = { lat: 43.726, lng: -79.401}
     let point2 = { lat: 43.871, lng: -78.961}
     new window.google.maps.Polyline({
@@ -104,24 +110,6 @@ function getDom() {
       map,
       title: "point1",
     })
-
-    //poly.setMap(map);
-
-
-    //const path = poly.getPath();
-    //path.push(point1);
-/*     new window.google.maps.Marker({
-      postition: point1,
-      title: "#" + path.getLength(),
-      map: map,
-    }) */
-    //path.push(point2);
- /*    new window.google.maps.Marker({
-      postition: point2,
-      title: "#" + path.getLength(),
-      map: map,
-    }) */
-
   }
 
   function computeDistance() {
@@ -129,100 +117,42 @@ function getDom() {
     //console.log('this is distance', distance);
   }
 
+  function handleChange({target}) {
+    if(target.id === 'googleOrigin') {
+      console.log('in origin field');
+      let place = originAutoRef.getPlace() ?? null;
+      console.log(place.address_components[0].long_name ?? null);
+      if(place) {
+        console.log('PLACE EXISTS');
+      }
+    }
+
+    if(target.id === 'googleDest') {
+      console.log('in dest field');
+      let place = destAutoRef.getPlace();
+      console.log(place.address_components[0].long_name ?? null);
+      if(place) {
+        console.log('PLACE EXISTS');
+      }
+    }
+  }
+//setOrigin(e.target.value)
   return (
     <>
     <div id="map" ref={mapRef} className="googleMap"></div>
-    <input id="googleID" ref={googleRef} type="text"/>
-    <button onClick={() => computeDistance()}>distace</button>
-    <button onClick={() => getDom()}>docu</button>
-    <button onClick={() => makeMap()}>map</button>
-    {/* <PlacesAutocomplete
-      value={origin}
-      onChange={handleOrigin}
-      onSelect={handleOriginSelect}
-    >
-    {({ getInputProps, suggestions, getSuggestionItemProps, loading }) => (
-      <div>
-        <input
-          {...getInputProps({
-            placeholder: 'Search Places ...',
-            className: 'location-search-input',
-          })}
-        />
-        <div className="autocomplete-dropdown-container">
-          {loading && <div>Loading...</div>}
-          {suggestions.map(suggestion => {
-            const className = suggestion.active
-              ? 'suggestion-item--active'
-              : 'suggestion-item';
-            // inline style for demonstration purpose
-            const style = suggestion.active
-              ? { backgroundColor: '#fafafa', cursor: 'pointer' }
-              : { backgroundColor: '#ffffff', cursor: 'pointer' };
-            return (
-              <div
-                {...getSuggestionItemProps(suggestion, {
-                  className,
-                  style,
-                })}
-              >
-                <span>{suggestion.description}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    )}
-  </PlacesAutocomplete>
-  
-    <PlacesAutocomplete
-    value={destination}
-    onChange={handleDestination}
-    onSelect={handleDestinationSelect}
-  >
-  {({ getInputProps, suggestions, getSuggestionItemProps, loading }) => (
-    <div>
-
-      <input
-        {...getInputProps({
-          placeholder: 'Search Places ...',
-          className: 'location-search-input',
-        })}
-      />
-      <div className="autocomplete-dropdown-container">
-        {loading && <div>Loading...</div>}
-        {suggestions.map(suggestion => {
-          const className = suggestion.active
-            ? 'suggestion-item--active'
-            : 'suggestion-item';
-          // inline style for demonstration purpose
-          const style = suggestion.active
-            ? { backgroundColor: '#fafafa', cursor: 'pointer' }
-            : { backgroundColor: '#ffffff', cursor: 'pointer' };
-          return (
-            <div
-              {...getSuggestionItemProps(suggestion, {
-                className,
-                style,
-              })}
-            >
-              <span>{suggestion.description}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  )}
-  </PlacesAutocomplete> */}
+    <form onSubmit={() => createOrder()}>
+      <input value={origin} id="googleOrigin" ref={originRef} onSelect={(e) => console.log(e.target.value)}
+        onChange={(e) => setOrigin(e.target.value)} type="text"/>
+      <input  id="orderDescript" onChange={(e) => setOrderDescript(e.target.value)} type="text"/>
+      <input value={destination} id="googleDest" ref={destRef} onSelect={(e) => console.log(e.target.value)}
+      onChange={(e) => setDestination(e.target.value)} type="text"/>
+      <button type="submit">submit</button>
+    </form>
+{/*     <button onClick={() => computeDistance()}>distace</button>
+    <button onClick={() => getDom()} >docu</button>
+    <button onClick={() => makeMap()}>map</button> */}
   </>
   );
 }
 
 export default App;
-
-/* 
-<iframe
-src={`https://www.google.com/maps/embed/v1/place?key=${process.env.REACT_APP_googleKey}
-  &q=Space+Needle,Seattle+WA`} allowfullscreen>
-</iframe>
-*/
