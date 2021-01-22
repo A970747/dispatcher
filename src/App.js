@@ -13,6 +13,8 @@ function App() {
   const [originAutoRef, setOriginAutoVal] = useState('');
   const [destAutoRef, setDestAutoVal] = useState('');
   const [orderDescript, setOrderDescript] = useState('');
+  const [originPlace, setOriginPlace] = useState(null);
+  const [destPlace, setDestPlace] = useState(null);
 
   const mapRef = useRef();
   const originRef = useRef();
@@ -28,32 +30,44 @@ function App() {
   useEffect(() => {
     let originAutoRef = new window.google.maps.places.Autocomplete(originRef.current);
     let destAutoRef = new window.google.maps.places.Autocomplete(destRef.current);
-    originAutoRef.setFields(['address_component', 'geometry']);
-    destAutoRef.setFields(['address_component', 'geometry']);
-    new window.google.maps.event.addListener(originAutoRef, 'place_changed', () => {
-      let place = originAutoRef.getPlace();
-      console.log(place);
-    })
-    new window.google.maps.event.addListener(destAutoRef, 'place_changed', () => {
-      let place = destAutoRef.getPlace();
-      console.log(place);
-    })
+    originAutoRef.setFields(['address_component', 'formatted_address', 'geometry']);
+    destAutoRef.setFields(['address_component', 'formatted_address', 'geometry']);
     setOriginAutoVal(originAutoRef);
     setDestAutoVal(destAutoRef);
+    new window.google.maps.event.addListener(originAutoRef, 'place_changed', () => {
+      let originPlace = originAutoRef.getPlace();
+      if(originPlace) {
+        setOriginPlace(originPlace);
+        setOrigin(originPlace.formatted_address);
+      }
+    })
+    new window.google.maps.event.addListener(destAutoRef, 'place_changed', () => {
+      let destPlace = destAutoRef.getPlace();
+      if(destPlace) {
+        setDestPlace(destPlace);
+        setDestination(destPlace.formatted_address);
+      }
+    })
   },[])
 
+  useEffect(() => {
+    console.log(origin);
+  }, [origin])
+
+  useEffect(() => {
+    console.log(destination);
+  }, [destination])
+
+  useEffect(() => {
+    console.log(originPlace);
+  }, [originPlace])
+
+  useEffect(() => {
+    console.log(destPlace);
+  }, [destPlace])
+
   function createOrder() {
-    console.log('WHY?')
-    console.log('THIS SHOULD WORK', originRef, destRef);
-    console.log('this input values', origin, destination);
-    console.log('creating order');
-    let originAuto = originAutoRef.getPlace();
-    let destinationAuto = destAutoRef.getPlace();
-    console.log('here is order info: \n', originAuto, orderDescript, destinationAuto);
 
-
-
-    let newLL = new window.google.maps.LatLng()
   }
 
   function makeGoogleLatLng(latLngObj) {
@@ -136,15 +150,16 @@ function App() {
       }
     }
   }
+
 //setOrigin(e.target.value)
   return (
     <>
     <div id="map" ref={mapRef} className="googleMap"></div>
     <form onSubmit={() => createOrder()}>
-      <input value={origin} id="googleOrigin" ref={originRef} onSelect={(e) => console.log(e.target.value)}
+      <input value={origin} id="googleOrigin" ref={originRef}
         onChange={(e) => setOrigin(e.target.value)} type="text"/>
       <input  id="orderDescript" onChange={(e) => setOrderDescript(e.target.value)} type="text"/>
-      <input value={destination} id="googleDest" ref={destRef} onSelect={(e) => console.log(e.target.value)}
+      <input value={destination} id="googleDest" ref={destRef}
       onChange={(e) => setDestination(e.target.value)} type="text"/>
       <button type="submit">submit</button>
     </form>
