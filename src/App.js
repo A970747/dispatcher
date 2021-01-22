@@ -1,5 +1,6 @@
 import React, {useState, useEffect, useRef} from 'react'
-import PlacesAutocomplete, {geocodeByAddress,getLatLng,} from 'react-places-autocomplete';
+import { useSelector, useDispatch} from 'react-redux';
+import { addOrder } from './store/actions/orderAction'
 import app from './app.css'
 
 //directionsapi
@@ -10,8 +11,8 @@ function App() {
   const [destination, setDestination] = useState('');
   const [originLatLng, setOriginLatLng] = useState({});
   const [destLatLng, setDestLatLng] = useState({});
-  const [originAutoRef, setOriginAutoVal] = useState('');
-  const [destAutoRef, setDestAutoVal] = useState('');
+  const [originAutoRef, setOriginAutoRef] = useState('');
+  const [destAutoRef, setDestAutoRef] = useState('');
   const [orderDescript, setOrderDescript] = useState('');
   const [originPlace, setOriginPlace] = useState(null);
   const [destPlace, setDestPlace] = useState(null);
@@ -19,6 +20,9 @@ function App() {
   const mapRef = useRef();
   const originRef = useRef();
   const destRef = useRef();
+
+  const dispatch = useDispatch();
+  const orders = useSelector(state => state);
 
   function getDom() {
     //! just a ref on how to create the auto complete object
@@ -32,13 +36,14 @@ function App() {
     let destAutoRef = new window.google.maps.places.Autocomplete(destRef.current);
     originAutoRef.setFields(['address_component', 'formatted_address', 'geometry']);
     destAutoRef.setFields(['address_component', 'formatted_address', 'geometry']);
-    setOriginAutoVal(originAutoRef);
-    setDestAutoVal(destAutoRef);
+    setOriginAutoRef(originAutoRef);
+    setDestAutoRef(destAutoRef);
     new window.google.maps.event.addListener(originAutoRef, 'place_changed', () => {
       let originPlace = originAutoRef.getPlace();
       if(originPlace) {
         setOriginPlace(originPlace);
         setOrigin(originPlace.formatted_address);
+        formatLocationReturn(originPlace);
       }
     })
     new window.google.maps.event.addListener(destAutoRef, 'place_changed', () => {
@@ -67,6 +72,34 @@ function App() {
   }, [destPlace])
 
   function createOrder() {
+    let orderObj = {};
+    orderObj.origin = formatLocationReturn(origin);
+    orderObj.destination = formatLocationReturn(destination);
+
+  }
+
+  function formatLocationReturn({formatted_address, address_components, geometry: {location}}) {
+    let returnObj = {};
+    returnObj.full_address = formatted_address;
+
+    [['locality','city'], ['administrative_area_level_1', 'region'],['country', 'country']].forEach(geoLevel => {
+      address_components.forEach( addressLevel => {
+        if (addressLevel.types.find(type => geoLevel[0] === type)) {
+          returnObj[geoLevel[1]] =  addressLevel.short_name;
+        }
+      })
+    })
+
+    returnObj.geoInfo = {
+      lat: location.lat(),
+      lng: location.lng(),
+      location: {...location},
+    }
+
+    return returnObj;
+  }
+
+  function getDirections(origin, destination) {
 
   }
 
@@ -77,6 +110,7 @@ function App() {
     return newLL
   }
 
+  //stuff to loop over to make map after we get encode path.
   function makeMap() {
     console.log(mapRef, originLatLng, destLatLng);
     let map = new window.google.maps.Map(mapRef.current, {
@@ -129,26 +163,6 @@ function App() {
   function computeDistance() {
     let distance = window.google.maps.geometry.spherical.computeDistanceBetween(originLatLng, destLatLng);
     //console.log('this is distance', distance);
-  }
-
-  function handleChange({target}) {
-    if(target.id === 'googleOrigin') {
-      console.log('in origin field');
-      let place = originAutoRef.getPlace() ?? null;
-      console.log(place.address_components[0].long_name ?? null);
-      if(place) {
-        console.log('PLACE EXISTS');
-      }
-    }
-
-    if(target.id === 'googleDest') {
-      console.log('in dest field');
-      let place = destAutoRef.getPlace();
-      console.log(place.address_components[0].long_name ?? null);
-      if(place) {
-        console.log('PLACE EXISTS');
-      }
-    }
   }
 
 //setOrigin(e.target.value)
