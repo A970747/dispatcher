@@ -10,6 +10,43 @@ function App() {
   console.log(googleRef);
 
 
+  //this tests the way directions uses latlngs etc
+/*   console.log('ord', order);
+  const directionsService = new window.google.maps.DirectionsService();
+
+  let point1 = { lat: 43.726, lng: -79.401}
+  let point2 = { lat: 43.871, lng: -78.961}
+  let originPt = new window.google.maps.LatLng(point1.lat, point1.lng);
+  let destPt =  new window.google.maps.LatLng(point2.lat, point2.lng);
+
+  console.log('pts', originPt, destPt);
+  console.log('obj', order.origin.geoInfo.location.lat, order.origin.geoInfo.location.lng)
+  //{lat: order.origin.geoInfo.lat, lng: order.origin.geoInfo.lng}
+  //{lat: order.destination.geoInfo.lat, lng: order.destination.geoInfo.lng}
+  let point3 = {
+    lat: order.origin.geoInfo.location.lat(), 
+    lng: order.origin.geoInfo.location.lng()
+  };
+
+  let point4 = {
+    lat: order.destination.geoInfo.location.lat(), 
+    lng: order.destination.geoInfo.location.lng()
+  };
+
+  let originPt2 = new window.google.maps.LatLng(point3.lat, point3.lng);
+  let destPt2 =  new window.google.maps.LatLng(point4.lat, point4.lng);
+
+  console.log('originpt', originPt, destPt, originPt2, destPt2,);
+  let req = {
+    origin: point3,
+    destination: point4,
+    travelMode: 'DRIVING'
+  }
+  
+  directionsService.route(req, (res, status) => {
+    console.log(res, 'status', status);
+  }) */
+
   function getDom() {
     let item = document.getElementById('googleID');
     console.log(item, googleRef);

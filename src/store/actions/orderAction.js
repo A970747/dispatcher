@@ -7,7 +7,7 @@ const generateColor = (id) => colorArr[id % 7];
 
 export const addOrder = (order) => {
   let deepOrder = _.cloneDeep(order)
-  let id = generateId();
+  let id = `ord${generateId()}`;
   let color = generateColor(id);
   
   return {

@@ -1,6 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react'
 import { useSelector, useDispatch} from 'react-redux';
 import { addOrder } from './store/actions/orderAction'
+import _ from 'lodash';
 import app from './app.css'
 
 //directionsapi
@@ -9,13 +10,14 @@ import app from './app.css'
 function App() {
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
-  const [originLatLng, setOriginLatLng] = useState({});
-  const [destLatLng, setDestLatLng] = useState({});
-  const [originAutoRef, setOriginAutoRef] = useState('');
-  const [destAutoRef, setDestAutoRef] = useState('');
   const [orderDescript, setOrderDescript] = useState('');
   const [originPlace, setOriginPlace] = useState(null);
   const [destPlace, setDestPlace] = useState(null);
+  const [originAutoRef, setOriginAutoRef] = useState('');
+  const [destAutoRef, setDestAutoRef] = useState('');
+
+  const [originLatLng, setOriginLatLng] = useState({});
+  const [destLatLng, setDestLatLng] = useState({});
 
   const mapRef = useRef();
   const originRef = useRef();
@@ -43,7 +45,6 @@ function App() {
       if(originPlace) {
         setOriginPlace(originPlace);
         setOrigin(originPlace.formatted_address);
-        formatLocationReturn(originPlace);
       }
     })
     new window.google.maps.event.addListener(destAutoRef, 'place_changed', () => {
@@ -55,34 +56,37 @@ function App() {
     })
   },[])
 
-  useEffect(() => {
+/*   useEffect(() => {
     console.log(origin);
   }, [origin])
 
   useEffect(() => {
     console.log(destination);
-  }, [destination])
+  }, [destination]) */
 
-  useEffect(() => {
+  /*  useEffect(() => {
     console.log(originPlace);
   }, [originPlace])
 
   useEffect(() => {
     console.log(destPlace);
-  }, [destPlace])
+  }, [destPlace]) */
 
-  function createOrder() {
+  function createOrder(e) {
+    e.preventDefault();
     let orderObj = {};
-    orderObj.origin = formatLocationReturn(origin);
-    orderObj.destination = formatLocationReturn(destination);
+    orderObj.origin = formatLocationReturn(originPlace);
+    orderObj.destination = formatLocationReturn(destPlace);
 
+    getDirections(orderObj);
   }
 
-  function formatLocationReturn({formatted_address, address_components, geometry: {location}}) {
+  function formatLocationReturn({formatted_address, address_components, geometry: {location}} = {}) {
     let returnObj = {};
     returnObj.full_address = formatted_address;
 
     [['locality','city'], ['administrative_area_level_1', 'region'],['country', 'country']].forEach(geoLevel => {
+
       address_components.forEach( addressLevel => {
         if (addressLevel.types.find(type => geoLevel[0] === type)) {
           returnObj[geoLevel[1]] =  addressLevel.short_name;
@@ -90,24 +94,32 @@ function App() {
       })
     })
 
+
     returnObj.geoInfo = {
       lat: location.lat(),
       lng: location.lng(),
-      location: {...location},
+    //  location: {...location},
     }
 
+    console.log('return obj', returnObj);
     return returnObj;
   }
 
-  function getDirections(origin, destination) {
+  function getDirections(order) {
+    const directionsService = new window.google.maps.DirectionsService();
 
-  }
+    let originLatLng = {...order.origin.geoInfo};
+    let destLatLng = {...order.destination.geoInfo};
 
-  function makeGoogleLatLng(latLngObj) {
-    //console.log('making ll with:', latLngObj.lat, latLngObj.lng)
-    let newLL = new window.google.maps.LatLng(latLngObj.lat, latLngObj.lng)
-    //console.log('newLL', newLL)
-    return newLL
+    let req = {
+      origin: originLatLng,
+      destination: destLatLng,
+      travelMode: 'DRIVING'
+    }
+    
+    directionsService.route(req, (res, status) => {
+      console.log(res, 'status', status);
+    })
   }
 
   //stuff to loop over to make map after we get encode path.
@@ -160,16 +172,23 @@ function App() {
     })
   }
 
-  function computeDistance() {
-    let distance = window.google.maps.geometry.spherical.computeDistanceBetween(originLatLng, destLatLng);
+  //probably don't need this unless we get to latlng only user input
+  //function computeDistance() {
+    //let distance = window.google.maps.geometry.spherical.computeDistanceBetween(originLatLng, destLatLng);
     //console.log('this is distance', distance);
+  //}
+  
+  function makeGoogleLatLng(latLngObj) {
+    //console.log('making ll with:', latLngObj.lat, latLngObj.lng)
+    let newLL = new window.google.maps.LatLng(latLngObj.lat, latLngObj.lng)
+    //console.log('newLL', newLL)
+    return newLL
   }
 
-//setOrigin(e.target.value)
   return (
     <>
     <div id="map" ref={mapRef} className="googleMap"></div>
-    <form onSubmit={() => createOrder()}>
+    <form onSubmit={(e) => createOrder(e)}>
       <input value={origin} id="googleOrigin" ref={originRef}
         onChange={(e) => setOrigin(e.target.value)} type="text"/>
       <input  id="orderDescript" onChange={(e) => setOrderDescript(e.target.value)} type="text"/>
