@@ -26,8 +26,3 @@ let order = {
   origin: 'Toronto, ON',
   destination: 'Montreal, QC',
 }
-
-/* console.log(store.getState());
-store.dispatch(addOrder(order));
-store.dispatch(addRoute(order));
-console.log(store.getState()); */

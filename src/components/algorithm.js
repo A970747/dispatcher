@@ -16,21 +16,14 @@ function GenRoutes({orderMap, removeOrders}) {
   useEffect(() => {if(orders.length > 0) calcStraightLineDist()}, [orders]);
 
   useEffect(() => {
-    console.log(orders);
     let tempArray = [];
     orders.forEach((each, index) => tempArray.push(index))
     setIndexes(tempArray);
   }, [orders])
 
   useEffect(() => {
-    console.log('routes', routes);
     mapRoutes(routes);
   }, [routes])
-  //useEffect(() => console.log('index', indexes), [indexes])
-  //useEffect(() => console.log('result', result), [result])
-  //useEffect(() => console.log('route', route), [result])
-  useEffect(() => console.log('stops', stopsArray), [stopsArray])
-  useEffect(() => console.log('poly', polylineArray), [polylineArray])
 
   async function optimize() {
     let tempArray = [...indexes];
@@ -161,7 +154,6 @@ function GenRoutes({orderMap, removeOrders}) {
     removeRoutePolylines();
     let polycopy = []
     routes.forEach(route => {
-      console.log('in for each', routes.route);
       const decodedPath = new window.google.maps.geometry.encoding.decodePath(route.route);
       let polyline = new window.google.maps.Polyline({
         path: decodedPath,
@@ -199,8 +191,8 @@ function GenRoutes({orderMap, removeOrders}) {
 
   return (
     <>
-      <button onClick={() => createRoute()}>create route</button>
-      <button onClick={() => optimize()}>run the algorithm</button>
+      <button onClick={() => optimize()}>1. run the algorithm</button>
+      <button onClick={() => createRoute()}>2. create route</button>
       <button onClick={() => toggleRoutePolylines()}>hide routes</button>
       <button onClick={() => removeRoutePolylines()}>remove routes</button>
     </>
