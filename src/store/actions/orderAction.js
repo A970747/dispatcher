@@ -25,3 +25,9 @@ export const deleteOrder = (order) => {
     data: {...deepOrder}
   }
 }
+
+export const deleteAllOrders = () => {
+  return {
+    type: 'DELETE_ALL_ORDERS',
+  }
+}

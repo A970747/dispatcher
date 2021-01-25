@@ -1,11 +1,8 @@
 import React, {useState, useEffect, useRef} from 'react'
 import { useSelector, useDispatch} from 'react-redux';
 import { addOrder } from './store/actions/orderAction'
-import _ from 'lodash';
+import GenRoutes from './components/algorithm';
 import app from './app.css'
-
-//directionsapi
-//maps/embed/v1/directions
 
 function App() {
   const [origin, setOrigin] = useState('');
@@ -13,13 +10,10 @@ function App() {
   const [orderDescription, setOrderDescription] = useState('');
   const [originPlace, setOriginPlace] = useState('');
   const [destPlace, setDestPlace] = useState('');
-  const [path, setPath] = useState('');
   const [orderMap, setOrderMap] = useState(null);
   const [originMarker, setOriginMarker] = useState(null);
   const [destMarker, setDestMarker] = useState(null);
-
-  const [originLatLng, setOriginLatLng] = useState({});
-  const [destLatLng, setDestLatLng] = useState({});
+  const [polylineArray, setPolylineArray] = useState([]);
 
   const mapRef = useRef();
   const originRef = useRef();
@@ -28,20 +22,50 @@ function App() {
   const dispatch = useDispatch();
   const orders = useSelector(state => state.orders);
 
-  function getDom() {
-    //! just a ref on how to create the auto complete object
-    let item = document.getElementById('googleID');
-    console.log(item, originRef);
-    let info = new window.google.maps.places.Autocomplete(originRef.current);
-  }
+  useEffect(() => {
+    const getData = async () => {
+      const map = await loadMap();
+      setOrderMap(map);
+    }
+
+    getData();
+  }, [])
 
   useEffect(() => {
-    let newOrderMap = new window.google.maps.Map(mapRef.current, {
-      zoom: 3,
-      center: { lat: 49.884, lng: -97.147 }
-    });
-    setOrderMap(newOrderMap);
+    if(orderMap) {
+      setAutoComplete()
+    };
 
+  }, [orderMap])
+
+  useEffect(() => {
+    if (originMarker) originMarker.setMap(null)
+  }, [originPlace])
+
+  useEffect(() => {
+    if (destMarker) destMarker.setMap(null)
+  }, [destPlace])
+
+  useEffect(() => {
+    mapOrders();
+  }, [orders])
+
+  function loadMap() {
+    return new Promise((resolve, reject) => {
+      let map = new window.google.maps.Map(mapRef.current, {
+        zoom: 3,
+        center: { lat: 49.884, lng: -97.147 }
+      });
+
+      if(map) {
+        resolve(map)
+      } else {
+        reject('map not set');
+      }
+    })
+  };
+
+  function setAutoComplete() {
     let originAutoRef = new window.google.maps.places.Autocomplete(originRef.current);
     let destAutoRef = new window.google.maps.places.Autocomplete(destRef.current);
     originAutoRef.setFields(['address_component', 'formatted_address', 'geometry']);
@@ -55,9 +79,9 @@ function App() {
         setOriginPlace(originPlace);
         setOrigin(originPlace.formatted_address);
         let latLng = { lat: originPlace.geometry.location.lat(), lng: originPlace.geometry.location.lng()};
-        let marker = addMarker(latLng, newOrderMap, 'origin');
+        let marker = addMarker(latLng, 'origin');
         setOriginMarker(marker);
-        recenterMap(latLng, newOrderMap);
+        recenterMap(latLng);
       }
     })
 
@@ -67,23 +91,32 @@ function App() {
         setDestPlace(destPlace);
         setDestination(destPlace.formatted_address);
         let latLng = { lat: destPlace.geometry.location.lat(), lng: destPlace.geometry.location.lng()};
-        let marker = addMarker(latLng, newOrderMap, 'dest');
+        let marker = addMarker(latLng, 'dest');
         setDestMarker(marker);
-        recenterMap(latLng, newOrderMap);
+        recenterMap(latLng);
       }
     })
-  }, [])
+  }
+  
+  //! this is inneficient, it should check to see whats new and just add whats new
+  function mapOrders() {
+    removeOrderPolylines();
+    let polycopy = []
+    orders.forEach(order => {
+      const decodedPath = window.google.maps.geometry.encoding.decodePath(order.directions);
+      let polyline = new window.google.maps.Polyline({
+        path: decodedPath,
+        strokeColor: order.color,
+        strokeOpacity: 1.0,
+        strokeWeight: 3,
+      });
+      polyline.setMap(orderMap);
+      polycopy.push(polyline);
+    })
+    setPolylineArray(polycopy);
+  }
 
-  useEffect(() => {
-    if (originMarker) originMarker.setMap(null)
-  }, [originPlace])
-
-  useEffect(() => {
-    if (destMarker) destMarker.setMap(null)
-  }, [destPlace])
-
-  useEffect(() => console.log(orders), [orders])
-
+  //! need check to make sure user has selected a "place" so we can get geo info
   async function createOrder(e) {
     e.preventDefault();
     let orderObj = {};
@@ -92,6 +125,7 @@ function App() {
     orderObj.destination = formatLocationReturn(destPlace);
     orderObj.description = orderDescription;
     orderObj.directions = await getOrderDirections(orderObj);
+    orderObj.strtLnDist = calcStraightLineDist();
 
     originMarker.setMap(null);
     destMarker.setMap(null);
@@ -126,7 +160,7 @@ function App() {
     return returnObj;
   }
 
-  async function getOrderDirections(order) {
+  function getOrderDirections(order) {
     const directionsService = new window.google.maps.DirectionsService();
 
     let originLatLng = {...order.origin.geoInfo};
@@ -146,46 +180,43 @@ function App() {
         }
       })
     })
-
   }
 
-  const addMarker = (latLngObj, map = orderMap, tail) => {
-    if(map) {
-      let marker = new window.google.maps.Marker({
-        position: {...latLngObj},
-        label: (tail == 'origin') ? 'O' : 'D',
-        map
-      });
+  const addMarker = (latLngObj, tail) => {
+    let marker = new window.google.maps.Marker({
+      position: {...latLngObj},
+      label: (tail == 'origin') ? 'O' : 'D',
+      map: orderMap 
+    });
 
-      return marker;
-    }
+    return marker;
   }
 
-  function recenterMap(latLngs, map = orderMap) {
-    map.setCenter({...latLngs})
-    map.setZoom(5);
+  function recenterMap(latLngs) {
+    orderMap.setCenter({...latLngs})
+    orderMap.setZoom(5);
   }
 
-  //stuff to loop over to make map after we get encode path.
-  function makeMap() {
-    //path is saved in the object
-    let decodedPath = new window.google.maps.geometry.encoding.decodePath(path);
-    console.log('path', decodedPath);
-
-    new window.google.maps.Polyline({
-      path: decodedPath,
-      strokeColor: "#FE7569",
-      strokeOpacity: 1.0,
-      strokeWeight: 3,
-      title: "this is a line",
-      map: orderMap,
-    })
+  function removeOrderPolylines() {
+    polylineArray.forEach(each => {
+      each.setMap(null);
+    });
   }
 
-  //probably don't need this unless we get to latlng only user input
-  //function computeDistance() {
-    //let distance = window.google.maps.geometry.spherical.computeDistanceBetween(originLatLng, destLatLng);
-  //}
+  function toggleOrderPolylines() {
+    polylineArray.forEach(polyline => {
+      (polyline.visible == false) ? polyline.setVisible(true) : polyline.setVisible(false)
+    });
+  }
+
+  function calcStraightLineDist() {
+    const origin = originPlace.geometry.location
+    const dest = destPlace.geometry.location
+
+    let distance = window.google.maps.geometry.spherical.computeDistanceBetween(origin, dest);
+    let kms  = distance/1000;
+    return kms;
+  }
 
   return (
     <>
@@ -198,13 +229,11 @@ function App() {
         onChange={(e) => {setDestination(e.target.value)}} type="text" required />
       <button type="submit">add order</button>
     </form>
-
-    <button onClick={() => makeMap()}>map</button>
+    <button onClick={() => removeOrderPolylines()}>delete order paths</button>
+    <button onClick={() => toggleOrderPolylines()}>toggle order paths</button>
+    <GenRoutes orderMap={orderMap} removeOrders={() => removeOrderPolylines()}/>
   </>
   );
 }
 
 export default App;
-
-//<button onClick={() => computeDistance()}>distace</button>
-//<button onClick={() => getDom()} >docu</button>
