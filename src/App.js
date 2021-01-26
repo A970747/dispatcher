@@ -2,11 +2,20 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux';
 import { addOrder } from './store/actions/orderAction'
 import GenRoutes from './components/GenRoutes';
-import { AppBar, Button, Tabs, TabPanel, Tab, TextField } from '@material-ui/core';
-import app from './app.css'
-
+import { AppBar, Button, Tabs, Tab, TextField } from '@material-ui/core';
+import Box from '@material-ui/core/Box';
+import { makeStyles } from '@material-ui/core/styles';
+import TabPanel from './components/material-components/TabPanel'
+import app from './app.css';
 
 function App() {
+  const useStyles = makeStyles((theme) => ({
+    root: {
+      flexGrow: 1,
+      backgroundColor: theme.palette.background.paper,
+    },
+  }));
+
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
   const [orderDescription, setOrderDescription] = useState('');
@@ -16,13 +25,24 @@ function App() {
   const [originMarker, setOriginMarker] = useState(null);
   const [destMarker, setDestMarker] = useState(null);
   const [polylineArray, setPolylineArray] = useState([]);
+  const [tabValue, setTabValue] = React.useState(0);
 
+  const classes = useStyles();
   const mapRef = useRef();
   const originRef = useRef();
   const destRef = useRef();
 
   const dispatch = useDispatch();
   const orders = useSelector(state => state.orders);
+
+
+
+  function a11yProps(index) {
+    return {
+      id: `simple-tab-${index}`,
+      'aria-controls': `simple-tabpanel-${index}`,
+    };
+  }
 
   useEffect(() => {
     const getData = async () => {
@@ -220,28 +240,37 @@ function App() {
     return kms;
   }
 
+  const handleTabValues = (event, newValue) => {
+    setTabValue(newValue);
+  };
+
   return (
     <>
       <AppBar position="static">
-        <Tabs  aria-label="simple tabs example">
-          <Tab label="Orders" />
-          <Tab label="Routes" />
-          <Tab label="Drivers" />
+        <Tabs value={tabValue} onChange={handleTabValues} aria-label="simple tabs example">
+          <Tab label="Orders" {...a11yProps(0)}/>
+          <Tab label="Routes" {...a11yProps(1)}/>
+          <Tab label="Drivers" {...a11yProps(2)}/>
         </Tabs>
       </AppBar>
+      <Box>
       <div id="map" ref={mapRef} className="googleMap"></div>
-      <form onSubmit={(e) => createOrder(e)}>
-        <TextField id="googleOrigin" value={origin} inputRef={originRef} placeholder='Enter origin' onChange={(e) => setOrigin(e.target.value)}
-          type="text" required />
-        <TextField id="orderDescript" value={orderDescription} placeholder='Enter freight description'
-          onChange={(e) => setOrderDescription(e.target.value)} type="text" />
-        <TextField id="googleDest" value={destination} inputRef={destRef} placeholder='Enter destination'
-          onChange={(e) => { setDestination(e.target.value) }} type="text" required />
-        <Button color="primary" variant="contained" type="submit">add order</Button>
-      </form>
-
-      <Button color="primary" variant="contained" onClick={() => toggleOrderPolylines()}>toggle order paths</Button>
-      <GenRoutes orderMap={orderMap} removeOrders={() => removeOrderPolylines()} />
+      </Box>
+      <TabPanel value={tabValue} index={0}>
+        <form onSubmit={(e) => createOrder(e)}>
+          <TextField id="googleOrigin" value={origin} inputRef={originRef} placeholder='Enter origin' onChange={(e) => setOrigin(e.target.value)}
+            type="text" required />
+          <TextField id="orderDescript" value={orderDescription} placeholder='Enter freight description'
+            onChange={(e) => setOrderDescription(e.target.value)} type="text" />
+          <TextField id="googleDest" value={destination} inputRef={destRef} placeholder='Enter destination'
+            onChange={(e) => { setDestination(e.target.value) }} type="text" required />
+          <Button color="primary" variant="contained" type="submit">add order</Button>
+        </form>
+        <Button color="primary" variant="contained" onClick={() => toggleOrderPolylines()}>toggle order paths</Button>
+      </TabPanel>
+      <TabPanel value={tabValue} index={1}>
+        <GenRoutes orderMap={orderMap} removeOrders={() => removeOrderPolylines()} />
+      </TabPanel>
     </>
   );
 }
