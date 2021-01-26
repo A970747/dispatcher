@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {addRoute} from '../store/actions/routeAction'
 import {deleteAllOrders} from '../store/actions/orderAction'
 import {useSelector, useDispatch} from 'react-redux';
+import {Button, ButtonGroup} from '@material-ui/core';
 
 function GenRoutes({orderMap, removeOrders}) {
   const [indexes, setIndexes] = useState([]);
@@ -190,12 +191,12 @@ function GenRoutes({orderMap, removeOrders}) {
   }
 
   return (
-    <>
-      <button onClick={() => optimize()}>1. run the algorithm</button>
-      <button onClick={() => createRoute()}>2. create route</button>
-      <button onClick={() => toggleRoutePolylines()}>hide routes</button>
-      <button onClick={() => removeRoutePolylines()}>remove routes</button>
-    </>
+    <ButtonGroup color="primary" variant="contained">
+      <Button onClick={() => optimize()}>1. run the algorithm</Button>
+      <Button onClick={() => createRoute()}>2. create route</Button>
+      <Button onClick={() => toggleRoutePolylines()}>hide routes</Button>
+      <Button onClick={() => removeRoutePolylines()}>remove routes</Button>
+    </ButtonGroup>
   );
 }
 

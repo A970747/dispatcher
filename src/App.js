@@ -1,8 +1,10 @@
-import React, {useState, useEffect, useRef} from 'react'
-import { useSelector, useDispatch} from 'react-redux';
+import React, { useState, useEffect, useRef } from 'react'
+import { useSelector, useDispatch } from 'react-redux';
 import { addOrder } from './store/actions/orderAction'
-import GenRoutes from './components/algorithm';
+import GenRoutes from './components/GenRoutes';
+import { AppBar, Button, Tabs, TabPanel, Tab, TextField } from '@material-ui/core';
 import app from './app.css'
+
 
 function App() {
   const [origin, setOrigin] = useState('');
@@ -32,7 +34,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    if(orderMap) {
+    if (orderMap) {
       setAutoComplete()
     };
 
@@ -57,7 +59,7 @@ function App() {
         center: { lat: 49.884, lng: -97.147 }
       });
 
-      if(map) {
+      if (map) {
         resolve(map)
       } else {
         reject('map not set');
@@ -70,34 +72,34 @@ function App() {
     let destAutoRef = new window.google.maps.places.Autocomplete(destRef.current);
     originAutoRef.setFields(['address_component', 'formatted_address', 'geometry']);
     destAutoRef.setFields(['address_component', 'formatted_address', 'geometry']);
-    originAutoRef.setComponentRestrictions({country: ["us", "ca", "mx"],});
-    destAutoRef.setComponentRestrictions({country: ["us", "ca", "mx"],});
+    originAutoRef.setComponentRestrictions({ country: ["us", "ca", "mx"], });
+    destAutoRef.setComponentRestrictions({ country: ["us", "ca", "mx"], });
 
-    originAutoRef.addListener('place_changed', function() {
+    originAutoRef.addListener('place_changed', function () {
       let originPlace = originAutoRef.getPlace();
-      if(originPlace) {
+      if (originPlace) {
         setOriginPlace(originPlace);
         setOrigin(originPlace.formatted_address);
-        let latLng = { lat: originPlace.geometry.location.lat(), lng: originPlace.geometry.location.lng()};
+        let latLng = { lat: originPlace.geometry.location.lat(), lng: originPlace.geometry.location.lng() };
         let marker = addMarker(latLng, 'origin');
         setOriginMarker(marker);
         recenterMap(latLng);
       }
     })
 
-    destAutoRef.addListener('place_changed', function() {
+    destAutoRef.addListener('place_changed', function () {
       let destPlace = destAutoRef.getPlace();
-      if(destPlace) {
+      if (destPlace) {
         setDestPlace(destPlace);
         setDestination(destPlace.formatted_address);
-        let latLng = { lat: destPlace.geometry.location.lat(), lng: destPlace.geometry.location.lng()};
+        let latLng = { lat: destPlace.geometry.location.lat(), lng: destPlace.geometry.location.lng() };
         let marker = addMarker(latLng, 'dest');
         setDestMarker(marker);
         recenterMap(latLng);
       }
     })
   }
-  
+
   //! this is inneficient, it should check to see whats new and just add whats new
   function mapOrders() {
     removeOrderPolylines();
@@ -138,14 +140,14 @@ function App() {
     dispatch(addOrder(orderObj));
   }
 
-  function formatLocationReturn({formatted_address, address_components, geometry: {location}} = {}) {
+  function formatLocationReturn({ formatted_address, address_components, geometry: { location } } = {}) {
     let returnObj = {};
     returnObj.full_address = formatted_address;
 
-    [['locality','city'], ['administrative_area_level_1', 'region'],['country', 'country']].forEach(geoLevel => {
-      address_components.forEach( addressLevel => {
+    [['locality', 'city'], ['administrative_area_level_1', 'region'], ['country', 'country']].forEach(geoLevel => {
+      address_components.forEach(addressLevel => {
         if (addressLevel.types.find(type => geoLevel[0] === type)) {
-          returnObj[geoLevel[1]] =  addressLevel.short_name;
+          returnObj[geoLevel[1]] = addressLevel.short_name;
         }
       })
     })
@@ -153,8 +155,8 @@ function App() {
     returnObj.geoInfo = {
       lat: location.lat(),
       lng: location.lng(),
-    //! not sure if I need location, keeping it for now but so far latlng literals work
-    //  location: {...location},
+      //! not sure if I need location, keeping it for now but so far latlng literals work
+      //  location: {...location},
     }
 
     return returnObj;
@@ -163,17 +165,17 @@ function App() {
   function getOrderDirections(order) {
     const directionsService = new window.google.maps.DirectionsService();
 
-    let originLatLng = {...order.origin.geoInfo};
-    let destLatLng = {...order.destination.geoInfo};
+    let originLatLng = { ...order.origin.geoInfo };
+    let destLatLng = { ...order.destination.geoInfo };
     let req = {
       origin: originLatLng,
       destination: destLatLng,
       travelMode: 'DRIVING'
     }
-    
+
     return new Promise((resolve, reject) => {
       directionsService.route(req, (res, status) => {
-        if(status==='OK') {
+        if (status === 'OK') {
           resolve(res.routes[0].overview_polyline)
         } else {
           reject(status);
@@ -184,16 +186,16 @@ function App() {
 
   const addMarker = (latLngObj, tail) => {
     let marker = new window.google.maps.Marker({
-      position: {...latLngObj},
+      position: { ...latLngObj },
       label: (tail == 'origin') ? 'O' : 'D',
-      map: orderMap 
+      map: orderMap
     });
 
     return marker;
   }
 
   function recenterMap(latLngs) {
-    orderMap.setCenter({...latLngs})
+    orderMap.setCenter({ ...latLngs })
     orderMap.setZoom(5);
   }
 
@@ -214,26 +216,45 @@ function App() {
     const dest = destPlace.geometry.location
 
     let distance = window.google.maps.geometry.spherical.computeDistanceBetween(origin, dest);
-    let kms  = distance/1000;
+    let kms = distance / 1000;
     return kms;
   }
 
   return (
     <>
-    <div id="map" ref={mapRef} className="googleMap"></div>
-    <form onSubmit={(e) => createOrder(e)}>
-      <input id="googleOrigin" value={origin} ref={originRef} placeholder='Enter origin'
-        onChange={(e) => setOrigin(e.target.value)} type="text" required />
-      <input  id="orderDescript" value={orderDescription} placeholder='Enter freight description' onChange={(e) => setOrderDescription(e.target.value)} type="text" />
-      <input id="googleDest" value={destination}  ref={destRef} placeholder='Enter destination'
-        onChange={(e) => {setDestination(e.target.value)}} type="text" required />
-      <button type="submit">add order</button>
-    </form>
-    <button onClick={() => removeOrderPolylines()}>delete order paths</button>
-    <button onClick={() => toggleOrderPolylines()}>toggle order paths</button>
-    <GenRoutes orderMap={orderMap} removeOrders={() => removeOrderPolylines()}/>
-  </>
+      <AppBar position="static">
+        <Tabs  aria-label="simple tabs example">
+          <Tab label="Orders" />
+          <Tab label="Routes" />
+          <Tab label="Drivers" />
+        </Tabs>
+      </AppBar>
+      <div id="map" ref={mapRef} className="googleMap"></div>
+      <form onSubmit={(e) => createOrder(e)}>
+        <TextField id="googleOrigin" value={origin} inputRef={originRef} placeholder='Enter origin' onChange={(e) => setOrigin(e.target.value)}
+          type="text" required />
+        <TextField id="orderDescript" value={orderDescription} placeholder='Enter freight description'
+          onChange={(e) => setOrderDescription(e.target.value)} type="text" />
+        <TextField id="googleDest" value={destination} inputRef={destRef} placeholder='Enter destination'
+          onChange={(e) => { setDestination(e.target.value) }} type="text" required />
+        <Button color="primary" variant="contained" type="submit">add order</Button>
+      </form>
+
+      <Button color="primary" variant="contained" onClick={() => toggleOrderPolylines()}>toggle order paths</Button>
+      <GenRoutes orderMap={orderMap} removeOrders={() => removeOrderPolylines()} />
+    </>
   );
 }
 
 export default App;
+
+//<button onClick={() => toggleOrderPolylines()}>toggle order paths</button>
+
+{/* <form >
+<input id="googleOrigin" value={origin} ref={originRef} placeholder='Enter origin'
+  onChange={(e) => setOrigin(e.target.value)} type="text" required />
+<input id="orderDescript" value={orderDescription} placeholder='Enter freight description' onChange={(e) => setOrderDescription(e.target.value)} type="text" />
+<input id="googleDest" value={destination}  ref={destRef} placeholder='Enter destination'
+  onChange={(e) => {setDestination(e.target.value)}} type="text" required />
+<button type="submit">add order</button>
+</form> */}
