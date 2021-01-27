@@ -1,4 +1,14 @@
 .googleMap {
-  width: 500px;
+  width: auto;
   height: 500px;
+}
+
+#gridMe {
+  height: 100%;
+  width: 100%;
+}
+
+.maxMe {
+  height: 100%;
+  width: 100%;
 }

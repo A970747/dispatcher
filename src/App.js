@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux';
 import { addOrder } from './store/actions/orderAction'
 import GenRoutes from './components/GenRoutes';
-import { AppBar, Button, Tabs, Tab, TextField } from '@material-ui/core';
+import { AppBar, Button, Container, Grid, Tabs, Tab, TextField } from '@material-ui/core';
 import Box from '@material-ui/core/Box';
 import { makeStyles } from '@material-ui/core/styles';
 import TabPanel from './components/material-components/TabPanel'
@@ -13,7 +13,7 @@ function App() {
     root: {
       flexGrow: 1,
       backgroundColor: theme.palette.background.paper,
-    },
+    }
   }));
 
   const [origin, setOrigin] = useState('');
@@ -34,8 +34,6 @@ function App() {
 
   const dispatch = useDispatch();
   const orders = useSelector(state => state.orders);
-
-
 
   function a11yProps(index) {
     return {
@@ -246,36 +244,44 @@ function App() {
 
   return (
     <>
-      <AppBar position="static">
-        <Tabs value={tabValue} onChange={handleTabValues} aria-label="simple tabs example">
+      <AppBar position="static" >
+        <Tabs value={tabValue} onChange={handleTabValues} aria-label="simple tabs example" variant="fullWidth">
           <Tab label="Orders" {...a11yProps(0)}/>
           <Tab label="Routes" {...a11yProps(1)}/>
-          <Tab label="Drivers" {...a11yProps(2)}/>
+          <Tab label="Drivers" {...a11yProps(2)} disabled/>
         </Tabs>
       </AppBar>
-      <Box>
-      <div id="map" ref={mapRef} className="googleMap"></div>
-      </Box>
-      <TabPanel value={tabValue} index={0}>
-        <form onSubmit={(e) => createOrder(e)}>
-          <TextField id="googleOrigin" value={origin} inputRef={originRef} placeholder='Enter origin' onChange={(e) => setOrigin(e.target.value)}
-            type="text" required />
-          <TextField id="orderDescript" value={orderDescription} placeholder='Enter freight description'
-            onChange={(e) => setOrderDescription(e.target.value)} type="text" />
-          <TextField id="googleDest" value={destination} inputRef={destRef} placeholder='Enter destination'
-            onChange={(e) => { setDestination(e.target.value) }} type="text" required />
-          <Button color="primary" variant="contained" type="submit">add order</Button>
-        </form>
-        <Button color="primary" variant="contained" onClick={() => toggleOrderPolylines()}>toggle order paths</Button>
-      </TabPanel>
-      <TabPanel value={tabValue} index={1}>
-        <GenRoutes orderMap={orderMap} removeOrders={() => removeOrderPolylines()} />
-      </TabPanel>
+      <Grid container spacing={1}>
+        <Grid item xs={12} sm={6} direction="column" justify="center" className={classes.test} >
+          <TabPanel value={tabValue} index={0} >
+            <form onSubmit={(e) => createOrder(e)} >
+                <TextField id="googleOrigin" value={origin} inputRef={originRef} placeholder='Enter origin' onChange={(e) => setOrigin(e.target.value)}
+                  type="text" required />
+                <TextField id="orderDescript" value={orderDescription} placeholder='Enter freight description'
+                  onChange={(e) => setOrderDescription(e.target.value)} type="text" />
+                <TextField id="googleDest" value={destination} inputRef={destRef} placeholder='Enter destination'
+                  onChange={(e) => { setDestination(e.target.value) }} type="text" required />
+                <Button color="primary" variant="contained" type="submit">add order</Button>
+            </form>
+          </TabPanel>
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <div id="map" ref={mapRef} className="googleMap"></div>
+        </Grid>
+
+        <Grid item xs={12}>
+          <TabPanel value={tabValue} index={1}>
+            <GenRoutes orderMap={orderMap} removeOrders={() => removeOrderPolylines()} />
+          </TabPanel>
+        </Grid>
+      </Grid>
     </>
   );
 }
 
 export default App;
+//<Button color="primary" variant="contained" onClick={() => toggleOrderPolylines()}>toggle order paths</Button>
+
 
 //<button onClick={() => toggleOrderPolylines()}>toggle order paths</button>
 
